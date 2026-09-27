@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charts · Adamawa VREK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+<div class="topbar-inner">
+    <div class="logo"><div class="logo-mark">AV</div>Adamawa <span>VREK</span></div>
+    <nav class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="state-results.html">State results</a>
+      <a href="lga-results.html">LGAs</a>
+      <a href="charts.html" class="active">Charts</a>
+      <a href="progress.html">Progress</a>
+    </nav>
+    <div class="topbar-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="clock mono" id="clock">--:--:--</div>
+      <a href="admin-login.html" class="btn-login"><i class="fas fa-user-shield"></i> Officer login</a>
+    </div>
+</div>
+</header>
+
+<div class="disclaimer">
+  Charts are drawn from the same totals shown on the dashboard. They will show flat, empty distributions until real figures are entered.
+</div>
+
+<main class="simple">
+  <div>
+    <h1 class="page-title">Statewide vote share</h1>
+    <p class="lead">Nothing here is a separate dataset — both charts reflect whatever has been entered on the state results page.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-accent-line" style="background: linear-gradient(90deg, var(--accent2), transparent);"></div>
+    <div class="card-label"><i class="fas fa-chart-pie" style="color:var(--accent2);"></i>Vote distribution</div>
+    <div class="chart-wrap" style="height:260px;">
+      <canvas id="donutChart" width="240" height="240"></canvas>
+      <div class="chart-center"><div class="chart-center-num" id="chart-center-num">0%</div><div class="chart-center-label">leading</div></div>
+    </div>
+    <div class="chart-legend" id="chart-legend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-accent-line" style="background: linear-gradient(90deg, var(--accent), transparent);"></div>
+    <div class="card-label"><i class="fas fa-chart-column" style="color:var(--accent);"></i>Party standings, by vote share</div>
+    <div style="height:320px;"><canvas id="barChart"></canvas></div>
+  </div>
+</main>
+
+<footer class="site-footer">Adamawa VREK &middot; unofficial collation tool &middot; not an official INEC source</footer>
+
+<script src="assets/data.js"></script>
+<script>
+  setInterval(function () {
+    document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-NG", { hour12: false });
+  }, 1000);
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-NG", { hour12: false });
+
+  const s = computeStandings();
+  const hasVotes = s.grandTotal > 0;
+  const leader = s.standings[0];
+  document.getElementById("chart-center-num").textContent = hasVotes ? leader.party : "—";
+  document.getElementById("chart-center-num").style.color = hasVotes ? (PARTY_COLORS[leader.id] || "var(--text)") : "var(--muted)";
+
+  const colors = s.standings.map(c => PARTY_COLORS[c.id] || "#94a3b8");
+
+  new Chart(document.getElementById("donutChart").getContext("2d"), {
+    type: "doughnut",
+    data: {
+      labels: s.standings.map(c => c.party),
+      datasets: [{
+        data: hasVotes ? s.standings.map(c => c.votes) : s.standings.map(() => 1),
+        backgroundColor: hasVotes ? colors : s.standings.map(() => "#e2e8f0"),
+        borderWidth: 2, borderColor: "#ffffff"
+      }]
+    },
+    options: { cutout: "68%", plugins: { legend: { display: false }, tooltip: { enabled: hasVotes } }, animation: { duration: 900 } }
+  });
+
+  document.getElementById("chart-legend").innerHTML = s.standings.map((c, i) => `
+    <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:${colors[i]}"></div><span style="font-size:0.78rem">${c.party}</span></div><span class="legend-pct">${c.pct.toFixed(1)}%</span></div>
+  `).join("");
+
+  new Chart(document.getElementById("barChart").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: s.standings.map(c => c.party),
+      datasets: [{
+        label: "Vote share (%)",
+        data: s.standings.map(c => c.pct),
+        backgroundColor: colors,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" }, grid: { color: "#e2e8f0" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+</script>
+</body>
+</html>

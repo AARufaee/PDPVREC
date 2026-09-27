@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login · Adamawa VREK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .role-tab { padding: 0.9rem 0.8rem; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; text-align: left; }
+  .role-tab:hover { border-color: var(--border2); }
+  .role-tab.active { background: rgba(0, 168, 107, 0.07); border-color: rgba(0, 168, 107, 0.35); }
+  .role-icon-wrap { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin-bottom: 0.5rem; }
+  .role-name { font-size: 0.85rem; font-weight: 600; }
+  .role-tab.active .role-name { color: var(--accent); }
+  .role-scope { font-family: "IBM Plex Mono", monospace; font-size: 0.62rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  @media (max-width: 560px) { .role-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+<div class="topbar-inner">
+    <div class="logo"><div class="logo-mark">AV</div>Adamawa <span>VREK</span></div>
+    <nav class="nav-links">
+      <a href="index.html">Dashboard</a>
+      <a href="state-results.html">State results</a>
+      <a href="lga-results.html">LGAs</a>
+      <a href="charts.html">Charts</a>
+      <a href="progress.html">Progress</a>
+    </nav>
+    <div class="topbar-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="clock mono" id="clock">--:--:--</div>
+    </div>
+</div>
+</header>
+
+<div class="disclaimer">
+  This login is a client-side demo gate only — it is not real security. Do not use this pattern to protect anything sensitive.
+</div>
+
+<main class="simple" style="max-width:480px;">
+  <div class="card">
+    <div class="card-accent-line" style="background: linear-gradient(90deg, var(--accent), transparent);"></div>
+    <h1 class="page-title"><i class="fas fa-user-shield" style="color:var(--accent); margin-right:6px;"></i>Officer sign-in</h1>
+    <p class="lead" style="margin-top:0.4rem;">Select a role, then sign in. Each role sees a different level of access on the results pages.</p>
+
+    <div class="card-label" style="margin-top:1.2rem;"><i class="fas fa-id-badge"></i>Select your role</div>
+    <div class="role-grid" id="role-grid"></div>
+
+    <form id="login-form" style="display:flex; flex-direction:column; gap:0.9rem; margin-top:1.2rem;">
+      <div class="field">
+        <label for="name" id="name-label">Officer name</label>
+        <input id="name" type="text" placeholder="e.g. Musa Aliyu" autocomplete="name" list="lga-hints">
+        <datalist id="lga-hints"></datalist>
+        <span class="stat-note" id="name-hint" hidden>Your LGA is your identity here — no separate LGA picker. Type your LGA's name (autocomplete will suggest it) and the system assigns you to it automatically.</span>
+      </div>
+      <div class="field">
+        <label for="password">Role password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+      </div>
+      <p class="error-text" id="error-text"></p>
+      <button type="submit" class="primary">Sign in</button>
+    </form>
+
+    <p class="stat-note" style="margin-top:1rem; line-height:1.6;">
+      Demo passwords &middot; Admin: <span class="mono">adamawa2027</span> &middot;
+      State Officer: <span class="mono">state2027</span> &middot;
+      LGA Officer: <span class="mono">lga2027</span>
+    </p>
+  </div>
+</main>
+
+<footer class="site-footer">Adamawa VREK &middot; unofficial collation tool &middot; not an official INEC source</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+  setInterval(function () {
+    document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-NG", { hour12: false });
+  }, 1000);
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-NG", { hour12: false });
+
+  let selectedRole = "admin";
+
+  document.getElementById("role-grid").innerHTML = ROLES.map(function (r, i) {
+    return '<div class="role-tab' + (i === 0 ? ' active' : '') + '" data-role="' + r.id + '">' +
+      '<div class="role-icon-wrap" style="background:' + r.color + '22; color:' + r.color + '"><i class="fas ' + r.icon + '"></i></div>' +
+      '<div class="role-name">' + r.name + '</div>' +
+      '<div class="role-scope">' + r.scope + '</div>' +
+      '</div>';
+  }).join("");
+
+  document.getElementById("lga-hints").innerHTML = LGAS.map(function (lga) {
+    return '<option value="' + lga + '">';
+  }).join("");
+
+  const nameInput = document.getElementById("name");
+  const nameLabel = document.getElementById("name-label");
+  const nameHint = document.getElementById("name-hint");
+
+  function selectRole(roleId) {
+    selectedRole = roleId;
+    document.querySelectorAll(".role-tab").forEach(function (t) {
+      t.classList.toggle("active", t.dataset.role === roleId);
+    });
+    if (roleId === "lga") {
+      nameLabel.textContent = "Your LGA";
+      nameInput.placeholder = "e.g. Yola North";
+      nameHint.hidden = false;
+    } else {
+      nameLabel.textContent = "Officer name";
+      nameInput.placeholder = "e.g. Musa Aliyu";
+      nameHint.hidden = true;
+    }
+  }
+
+  document.querySelectorAll(".role-tab").forEach(function (tab) {
+    tab.addEventListener("click", function () { selectRole(tab.dataset.role); });
+  });
+
+  document.getElementById("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const name = nameInput.value;
+    const password = document.getElementById("password").value;
+
+    if (login(selectedRole, name, password)) {
+      window.location.href = "dashboard.html";
+    } else {
+      document.getElementById("error-text").textContent = selectedRole === "lga"
+        ? "That LGA name wasn't recognized, or the password is wrong."
+        : "Incorrect password for the selected role.";
+    }
+  });
+</script>
+</body>
+</html>
